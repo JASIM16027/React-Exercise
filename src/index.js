@@ -9,8 +9,6 @@ const element = document.getElementById('root');
 // 3) Tell React to take control of the root element
 const root = ReactDOM.createRoot(element);
 
-
-
-// 5) Render the App component to the root element
+// 4) Render the App component to the root element
 root.render(<App />)
 
