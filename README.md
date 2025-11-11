@@ -367,3 +367,150 @@ class TodoList extends PureComponent {
 **➡️ সারমর্ম:**
 `React.PureComponent` হলো এমন একটি টুল, যা স্বয়ংক্রিয়ভাবে props ও state তুলনা করে **অপ্রয়োজনীয় রি-রেন্ডারিং বন্ধ করে পারফরম্যান্স উন্নত করে।** তবে, এটি shallow comparison করে বলে **nested data বা mutable state-এর ক্ষেত্রে সতর্ক থাকতে হয়।**
 
+
+
+# React Strict Mode: Understanding Double Rendering
+
+Let me explain React Strict Mode with clear examples showing how it helps catch bugs.
+
+## What is Strict Mode?
+
+Strict Mode is a development tool that intentionally **calls component functions twice** to help you find bugs related to **impure functions** - functions that produce side effects or inconsistent results.
+
+## Step-by-Step Example
+
+### Example 1: The Bug - Impure Component
+
+Let's say you have a simple counter component:
+
+```jsx
+let guestCount = 0; // Global variable (bad practice!)
+
+function GuestList() {
+  guestCount = guestCount + 1; // Side effect during render
+  
+  return <h1>Guest #{guestCount}</h1>;
+}
+```
+
+**Without Strict Mode:**
+- Component renders once
+- Shows: "Guest #1" ✓ (seems to work)
+
+**With Strict Mode:**
+- Component renders twice (in development)
+- First render: `guestCount = 1`
+- Second render: `guestCount = 2`
+- Shows: "Guest #2" ✗ (unexpected!)
+
+This exposes the bug! The component is **impure** because it modifies external state during rendering.
+
+### Example 2: The Fix - Pure Component
+
+Here's the corrected version:
+
+```jsx
+function GuestList() {
+  const [guestCount, setGuestCount] = useState(0);
+  
+  return (
+    <div>
+      <h1>Guest #{guestCount}</h1>
+      <button onClick={() => setGuestCount(guestCount + 1)}>
+        Add Guest
+      </button>
+    </div>
+  );
+}
+```
+
+**With Strict Mode:**
+- Component renders twice
+- Both renders show: "Guest #0"
+- Only changes when button is clicked (intentional side effect)
+- Behavior is predictable ✓
+
+## Example 3: Console Log Mystery
+
+```jsx
+function ProductCard({ name, price }) {
+  console.log('Rendering product'); // You'll see this TWICE
+  
+  return (
+    <div>
+      <h2>{name}</h2>
+      <p>${price}</p>
+    </div>
+  );
+}
+```
+
+**What happens:**
+- In development with Strict Mode: Console shows message **twice**
+- In production: Console shows message **once**
+
+This is **intentional** - it helps you understand that render functions should be pure and can be called multiple times.
+
+## Example 4: Real Bug - API Call During Render
+
+```jsx
+// ❌ BAD: Side effect during render
+function UserProfile({ userId }) {
+  fetch(`/api/users/${userId}`) // Called twice in Strict Mode!
+    .then(res => res.json())
+    .then(data => {
+      // This creates duplicate API calls
+    });
+  
+  return <div>Loading...</div>;
+}
+
+// ✅ GOOD: Side effect in useEffect
+function UserProfile({ userId }) {
+  const [user, setUser] = useState(null);
+  
+  useEffect(() => {
+    fetch(`/api/users/${userId}`)
+      .then(res => res.json())
+      .then(data => setUser(data));
+  }, [userId]); // Only runs when userId changes
+  
+  return <div>{user ? user.name : 'Loading...'}</div>;
+}
+```
+
+## How to Enable Strict Mode
+
+Wrap your app (or specific components) with `<StrictMode>`:
+
+```jsx
+import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+
+const root = createRoot(document.getElementById('root'));
+root.render(
+  <StrictMode>
+    <App />
+  </StrictMode>
+);
+```
+
+## Key Takeaways
+
+1. **Strict Mode only affects development** - production builds run normally
+2. **Double rendering is intentional** - it helps catch bugs early
+3. **Pure components** should produce the same output given the same props
+4. **Side effects belong in:**
+   - Event handlers (`onClick`, `onChange`)
+   - `useEffect` hooks
+   - NOT in the render function itself
+
+## What Strict Mode Checks
+
+- 🔍 Impure rendering functions
+- 🔍 Effects that don't clean up properly
+- 🔍 Deprecated lifecycle methods
+- 🔍 Legacy context API usage
+- 🔍 Unexpected side effects
+
+
