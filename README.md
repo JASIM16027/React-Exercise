@@ -514,3 +514,56 @@ root.render(
 - 🔍 Unexpected side effects
 
 
+
+**Props drilling** is a pattern in React where you pass data from a parent component down through multiple layers of child components, even when the intermediate components don't actually need that data themselves.
+
+## The Problem
+
+Imagine you have a component tree like this:
+
+```
+App → Dashboard → UserProfile → UserAvatar
+```
+
+If `App` has user data that only `UserAvatar` needs, you still have to pass it through `Dashboard` and `UserProfile` as props, even though those components don't use it. This is props drilling.
+
+## Example
+
+```javascript
+function App() {
+  const user = { name: "Alice", avatar: "avatar.jpg" };
+  return <Dashboard user={user} />;
+}
+
+function Dashboard({ user }) {
+  // Dashboard doesn't need user, just passes it along
+  return <UserProfile user={user} />;
+}
+
+function UserProfile({ user }) {
+  // UserProfile doesn't need user either
+  return <UserAvatar user={user} />;
+}
+
+function UserAvatar({ user }) {
+  // Finally! This component actually uses it
+  return <img src={user.avatar} alt={user.name} />;
+}
+```
+
+## Why It's a Problem
+
+- Makes code harder to maintain and refactor
+- Creates unnecessary dependencies between components
+- Clutters component props with data they don't use
+- Makes it harder to understand what each component actually needs
+
+## Solutions
+
+1. **Context API** - Share data across components without passing props manually
+2. **Component composition** - Render the child component where the data lives and pass it down directly
+3. **State management libraries** - Like Redux or Zustand for global state
+4. **Custom hooks** - Encapsulate data fetching logic that components can call directly
+
+
+
